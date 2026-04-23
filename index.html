@@ -158,6 +158,17 @@
             font-style: italic;
         }
 
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
         input[type="checkbox"] {
             width: 22px;
             height: 22px;
@@ -174,18 +185,17 @@
         <div class="input-group">
             <input type="text" id="novoNome" placeholder="Nome do novo atleta...">
             <div class="genero-escolha">
-                <button class="btn-gen" onclick="adicionarComGento('M')">MASC (H)</button>
-                <button class="btn-gen" onclick="adicionarComGento('F')">FEM (M)</button>
+                <button class="btn-gen" onclick="adicionarComGenero('M')">MASC (H)</button>
+                <button class="btn-gen" onclick="adicionarComGenero('F')">FEM (M)</button>
             </div>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <select id="modo"
-                style="width:100%; padding:12px; border-radius:12px; background:#222; color:white; border:1px solid #444;">
-                <option value="geral">Modo Geral (Todos x Todos)</option>
-                <option value="misto">Modo Misto (H + M)</option>
-            </select>
-        </div>
+        <label style="font-size: 0.8rem; color: #888; margin-left: 5px;">Tipo de Jogo:</label>
+        <select id="modo">
+            <option value="masc">Jogo Masculino</option>
+            <option value="fem">Jogo Feminino</option>
+            <option value="misto">Jogo Misto (H+M)</option>
+        </select>
 
         <div class="lista-jogadores" id="lista"></div>
 
@@ -228,40 +238,34 @@
             });
         }
 
-        function adicionarComGento(sexo) {
+        function adicionarComGenero(sexo) {
             const campo = document.getElementById('novoNome');
-            const nome = campo.value;
-            if (!nome) return alert("Digite o nome primeiro!");
-            atletas.unshift({ n: nome, s: sexo });
+            if (!campo.value) return alert("Digite o nome!");
+            atletas.unshift({ n: campo.value, s: sexo });
             campo.value = "";
             render();
         }
 
         function editarNome(i) {
             const novo = prompt("Editar nome:", atletas[i].n);
-            if (novo) {
-                atletas[i].n = novo;
-                render();
-            }
+            if (novo) { atletas[i].n = novo; render(); }
         }
 
         function excluirAtleta(i) {
-            if (confirm(`Remover ${atletas[i].n} da lista?`)) {
-                atletas.splice(i, 1);
-                render();
-            }
+            if (confirm(`Remover ${atletas[i].n}?`)) { atletas.splice(i, 1); render(); }
         }
 
         function sortear() {
             const selecionados = Array.from(document.querySelectorAll('.atleta-check:checked')).map(c => atletas[c.value]);
             const resDiv = document.getElementById('resultado');
-            if (selecionados.length < 2) return alert("Selecione os atletas presentes!");
+            const modo = document.getElementById('modo').value;
+
+            if (selecionados.length < 2) return alert("Selecione os atletas!");
 
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>DUPLAS DEFINIDAS</h3>";
+            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>RODADA GERADA</h3>";
 
             selecionados.sort(() => Math.random() - 0.5);
-            const modo = document.getElementById('modo').value;
 
             if (modo === "misto") {
                 let h = selecionados.filter(a => a.s === 'M');
@@ -269,16 +273,21 @@
                 while (h.length > 0 && m.length > 0) {
                     resDiv.innerHTML += `<div class="dupla">✅ ${h.pop().n} + ${m.pop().n}</div>`;
                 }
-                if (h.length > 0 || m.length > 0) {
-                    let sobra = [...h, ...m];
-                    resDiv.innerHTML += `<div class="aviso">⚠️ Sobrou sem par misto: ${sobra.map(s => s.n).join(', ')}</div>`;
-                }
+                let sobra = [...h, ...m];
+                if (sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Sobrou: ${sobra.map(s => s.n).join(', ')}</div>`;
             } else {
-                for (let i = 0; i < selecionados.length; i += 2) {
-                    if (selecionados[i + 1]) {
-                        resDiv.innerHTML += `<div class="dupla">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
+                // Filtra pelo gênero se não for misto
+                let filtrados = selecionados;
+                if (modo === "masc") filtrados = selecionados.filter(a => a.s === 'M');
+                if (modo === "fem") filtrados = selecionados.filter(a => a.s === 'F');
+
+                if (filtrados.length < 2) return alert("Atletas insuficientes para este modo!");
+
+                for (let i = 0; i < filtrados.length; i += 2) {
+                    if (filtrados[i + 1]) {
+                        resDiv.innerHTML += `<div class="dupla">✅ ${filtrados[i].n} + ${filtrados[i + 1].n}</div>`;
                     } else {
-                        resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${selecionados[i].n} espera.</div>`;
+                        resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${filtrados[i].n} espera.</div>`;
                     }
                 }
             }
@@ -286,7 +295,7 @@
         }
 
         function reiniciar() {
-            if (confirm("Deseja limpar as presenças do dia?")) {
+            if (confirm("Limpar presenças?")) {
                 document.querySelectorAll('.atleta-check').forEach(c => c.checked = false);
                 document.getElementById('resultado').style.display = "none";
             }
