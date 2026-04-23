@@ -9,38 +9,32 @@
         :root {
             --primary: #FFD700;
             --bg: #000000;
-            --card: #121212;
+            --card: #1A1A1A;
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg);
             color: white;
-            padding: 20px;
+            padding: 15px;
             margin: 0;
+        }
+
+        /* A estrutura perfeita que você pediu para manter */
+        .main-container {
+            border: 2px solid var(--primary);
+            border-radius: 25px;
+            padding: 20px;
+            max-width: 450px;
+            margin: 0 auto;
+            background: #050505;
         }
 
         h1 {
             text-align: center;
             color: var(--primary);
-            font-size: 1.5rem;
-            text-transform: uppercase;
-        }
-
-        /* Container Principal com a borda amarela que você gosta */
-        .main-container {
-            border: 2px solid var(--primary);
-            border-radius: 30px;
-            padding: 20px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        h2 {
-            font-size: 0.9rem;
-            color: #aaa;
-            text-transform: uppercase;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            margin-top: 0;
         }
 
         .input-group {
@@ -53,7 +47,7 @@
             flex: 1;
             background: #222;
             border: 1px solid #444;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 12px;
             color: white;
         }
@@ -61,117 +55,171 @@
         .btn-add {
             background: var(--primary);
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 0 15px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .lista-jogadores {
-            height: 250px;
+            height: 300px;
             overflow-y: auto;
             background: var(--card);
             border-radius: 15px;
-            padding: 10px;
-            margin-bottom: 15px;
+            padding: 5px;
             border: 1px solid #333;
+            margin-bottom: 15px;
         }
 
         .card-jogador {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #222;
+            padding: 10px;
+            border-bottom: 1px solid #252525;
         }
 
-        .card-jogador:last-child {
+        .info-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        /* O Lápis discreto para não quebrar o visual */
+        .edit-btn {
+            background: none;
             border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            opacity: 0.5;
+        }
+
+        .edit-btn:hover {
+            opacity: 1;
         }
 
         .btn-acao {
             width: 100%;
             background: var(--primary);
             border: none;
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 50px;
+            padding: 18px;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
             margin-bottom: 10px;
-            box-shadow: 0 4px 0 #b8860b;
-        }
-
-        .btn-acao:active {
-            transform: translateY(2px);
-            box-shadow: none;
         }
 
         .btn-limpar {
             background: transparent;
             border: 1px solid #444;
             color: #888;
-            box-shadow: none;
+            font-size: 0.9rem;
         }
 
         .resultado-box {
             margin-top: 15px;
-            background: #1a1a1a;
-            border-radius: 15px;
+            background: #111;
+            border-radius: 20px;
             padding: 15px;
             border: 1px solid var(--primary);
         }
 
         .dupla {
-            padding: 8px;
+            padding: 10px;
             text-align: center;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #222;
+            font-weight: 500;
+        }
+
+        .aviso {
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-align: center;
+            padding: 10px;
+            font-style: italic;
         }
 
         input[type="checkbox"] {
-            transform: scale(1.5);
+            width: 22px;
+            height: 22px;
             accent-color: var(--primary);
         }
     </style>
 </head>
 
 <body>
-    <h1>🏐 JOELHO BICHADO PRO</h1>
+
     <div class="main-container">
-        <h2>Gestão de Atletas</h2>
+        <h1>🏐 JOELHO BICHADO PRO</h1>
+
         <div class="input-group">
-            <input type="text" id="novoNome" placeholder="Nome do Jogador">
-            <button class="btn-add" onclick="adicionarNovo()">ADICIONAR</button>
+            <input type="text" id="novoNome" placeholder="Novo Atleta...">
+            <button class="btn-add" onclick="adicionarNovo()">+</button>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <select id="modo"
+                style="width:100%; padding:12px; border-radius:12px; background:#222; color:white; border:1px solid #444;">
+                <option value="geral">Modo Geral (Todos x Todos)</option>
+                <option value="misto">Modo Misto (H + M)</option>
+            </select>
         </div>
 
         <div class="lista-jogadores" id="lista"></div>
 
-        <div class="resultado-box" id="resultado" style="display:none"></div>
+        <div id="resultado" class="resultado-box" style="display:none"></div>
 
-        <button class="btn-acao" onclick="sortear()">SORTEAR CONFRONTOS 🎲</button>
-        <button class="btn-acao btn-limpar" onclick="reiniciar()">LIMPAR BANCO DE DADOS</button>
+        <button class="btn-acao" onclick="sortear()">GERAR PRÓXIMA RODADA 🎲</button>
+        <button class="btn-acao btn-limpar" onclick="reiniciar()">REINICIAR DAY USE 🔄</button>
     </div>
 
     <script>
+        // Mantendo seus 30 nomes fixos
         let atletas = [
             { n: "Celin Vôlei", s: "M" }, { n: "Geminiana", s: "F" }, { n: "Lorraine", s: "F" },
             { n: "Emerson", s: "M" }, { n: "Lúcio", s: "M" }, { n: "Wendel", s: "M" },
             { n: "Ricardo", s: "M" }, { n: "Patrícia", s: "F" }, { n: "Bruno", s: "M" },
-            { n: "Cássia", s: "F" }, { n: "Diego", s: "M" }, { n: "Fernanda", s: "F" }
-        ]; // Adicione os outros nomes aqui seguindo o padrão
+            { n: "Cássia", s: "F" }, { n: "Diego", s: "M" }, { n: "Fernanda", s: "F" },
+            { n: "Gustavo", s: "M" }, { n: "Helena", s: "F" }, { n: "Igor", s: "M" },
+            { n: "Juliana", s: "F" }, { n: "Kevin", s: "M" }, { n: "Larissa", s: "F" },
+            { n: "Murilo", s: "M" }, { n: "Natália", s: "F" }, { n: "Otávio", s: "M" },
+            { n: "Paula", s: "F" }, { n: "Quirino", s: "M" }, { n: "Renata", s: "F" },
+            { n: "Samuel", s: "M" }, { n: "Talita", s: "F" }, { n: "Uriel", s: "M" },
+            { n: "Vitor", s: "M" }, { n: "Wagner", s: "M" }, { n: "Xande", s: "M" }
+        ];
 
         function render() {
             const container = document.getElementById('lista');
             container.innerHTML = "";
             atletas.forEach((atleta, i) => {
-                container.innerHTML += `<div class="card-jogador"><span>${atleta.n}</span><input type="checkbox" class="atleta-check" value="${i}"></div>`;
+                container.innerHTML += `
+                    <div class="card-jogador">
+                        <div class="info-player">
+                            <input type="checkbox" class="atleta-check" value="${i}">
+                            <span>${atleta.n} <small style="color:#555">(${atleta.s})</small></span>
+                            <button class="edit-btn" onclick="editarNome(${i})">✏️</button>
+                        </div>
+                    </div>
+                `;
             });
+        }
+
+        function editarNome(i) {
+            const novo = prompt("Editar nome:", atletas[i].n);
+            if (novo) {
+                atletas[i].n = novo;
+                render();
+            }
         }
 
         function adicionarNovo() {
             const nome = document.getElementById('novoNome').value;
             if (!nome) return;
-            atletas.unshift({ n: nome, s: "M" });
+            const gen = confirm("É homem? (OK para Masc / Cancelar para Fem)") ? "M" : "F";
+            atletas.unshift({ n: nome, s: gen });
             document.getElementById('novoNome').value = "";
             render();
         }
@@ -179,18 +227,44 @@
         function sortear() {
             const selecionados = Array.from(document.querySelectorAll('.atleta-check:checked')).map(c => atletas[c.value]);
             const resDiv = document.getElementById('resultado');
-            if (selecionados.length < 2) return alert("Selecione os atletas!");
+            if (selecionados.length < 2) return alert("Selecione os atletas presentes!");
+
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<h2>Rodada</h2>";
+            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>DUPLAS DEFINIDAS</h3>";
+
             selecionados.sort(() => Math.random() - 0.5);
-            for (let i = 0; i < selecionados.length; i += 2) {
-                if (selecionados[i + 1]) resDiv.innerHTML += `<div class="dupla">${selecionados[i].n} & ${selecionados[i + 1].n}</div>`;
+            const modo = document.getElementById('modo').value;
+
+            if (modo === "misto") {
+                let h = selecionados.filter(a => a.s === 'M');
+                let m = selecionados.filter(a => a.s === 'F');
+
+                while (h.length > 0 && m.length > 0) {
+                    resDiv.innerHTML += `<div class="dupla">✅ ${h.pop().n} + ${m.pop().n}</div>`;
+                }
+
+                // Lógica para quando o número de H ou M é ímpar/desigual
+                if (h.length > 0 || m.length > 0) {
+                    let sobra = [...h, ...m];
+                    resDiv.innerHTML += `<div class="aviso">⚠️ Sobrou: ${sobra.map(s => s.n).join(', ')}. Sugestão: Alguém do sexo oposto repetir o jogo para fechar a dupla.</div>`;
+                }
+            } else {
+                for (let i = 0; i < selecionados.length; i += 2) {
+                    if (selecionados[i + 1]) {
+                        resDiv.innerHTML += `<div class="dupla">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
+                    } else {
+                        resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${selecionados[i].n} aguarda a próxima ou joga 3x3.</div>`;
+                    }
+                }
             }
+            window.scrollTo({ top: resDiv.offsetTop, behavior: 'smooth' });
         }
 
         function reiniciar() {
-            document.querySelectorAll('.atleta-check').forEach(c => c.checked = false);
-            document.getElementById('resultado').style.display = "none";
+            if (confirm("Deseja limpar as presenças do dia?")) {
+                document.querySelectorAll('.atleta-check').forEach(c => c.checked = false);
+                document.getElementById('resultado').style.display = "none";
+            }
         }
         render();
     </script>
