@@ -112,10 +112,6 @@
             opacity: 0.6;
         }
 
-        .icon-btn:hover {
-            opacity: 1;
-        }
-
         .btn-acao {
             width: 100%;
             background: var(--primary);
@@ -178,10 +174,8 @@
 </head>
 
 <body>
-
     <div class="main-container">
         <h1>🏐 JOELHO BICHADO PRO</h1>
-
         <div class="input-group">
             <input type="text" id="novoNome" placeholder="Nome do novo atleta...">
             <div class="genero-escolha">
@@ -189,18 +183,14 @@
                 <button class="btn-gen" onclick="adicionarComGenero('F')">FEM (M)</button>
             </div>
         </div>
-
         <label style="font-size: 0.8rem; color: #888; margin-left: 5px;">Tipo de Jogo:</label>
-        <select id="modo">
+        <select id="modo" onchange="render()">
+            <option value="misto">Jogo Misto (H+M)</option>
             <option value="masc">Jogo Masculino</option>
             <option value="fem">Jogo Feminino</option>
-            <option value="misto">Jogo Misto (H+M)</option>
         </select>
-
         <div class="lista-jogadores" id="lista"></div>
-
         <div id="resultado" class="resultado-box" style="display:none"></div>
-
         <button class="btn-acao" onclick="sortear()">GERAR PRÓXIMA RODADA 🎲</button>
         <button class="btn-acao btn-limpar" onclick="reiniciar()">REINICIAR DAY USE 🔄</button>
     </div>
@@ -221,20 +211,27 @@
 
         function render() {
             const container = document.getElementById('lista');
+            const modo = document.getElementById('modo').value;
             container.innerHTML = "";
+
             atletas.forEach((atleta, i) => {
-                container.innerHTML += `
-                    <div class="card-jogador">
-                        <div class="info-player">
-                            <input type="checkbox" class="atleta-check" value="${i}">
-                            <span>${atleta.n} <small style="color:#555">(${atleta.s})</small></span>
-                        </div>
-                        <div class="acoes-player">
-                            <button class="icon-btn" onclick="editarNome(${i})">✏️</button>
-                            <button class="icon-btn" style="color:#ff4444" onclick="excluirAtleta(${i})">🗑️</button>
-                        </div>
-                    </div>
-                `;
+                const mostrarMasc = modo === "masc" && atleta.s === "M";
+                const mostrarFem = modo === "fem" && atleta.s === "F";
+                const mostrarMisto = modo === "misto";
+
+                if (mostrarMasc || mostrarFem || mostrarMisto) {
+                    container.innerHTML += `
+                        <div class="card-jogador">
+                            <div class="info-player">
+                                <input type="checkbox" class="atleta-check" data-index="${i}">
+                                <span>${atleta.n} <small style="color:#555">(${atleta.s})</small></span>
+                            </div>
+                            <div class="acoes-player">
+                                <button class="icon-btn" onclick="editarNome(${i})">✏️</button>
+                                <button class="icon-btn" style="color:#ff4444" onclick="excluirAtleta(${i})">🗑️</button>
+                            </div>
+                        </div>`;
+                }
             });
         }
 
@@ -256,7 +253,8 @@
         }
 
         function sortear() {
-            const selecionados = Array.from(document.querySelectorAll('.atleta-check:checked')).map(c => atletas[c.value]);
+            const checks = document.querySelectorAll('.atleta-check:checked');
+            const selecionados = Array.from(checks).map(c => atletas[c.getAttribute('data-index')]);
             const resDiv = document.getElementById('resultado');
             const modo = document.getElementById('modo').value;
 
@@ -264,7 +262,6 @@
 
             resDiv.style.display = "block";
             resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>RODADA GERADA</h3>";
-
             selecionados.sort(() => Math.random() - 0.5);
 
             if (modo === "misto") {
@@ -276,19 +273,9 @@
                 let sobra = [...h, ...m];
                 if (sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Sobrou: ${sobra.map(s => s.n).join(', ')}</div>`;
             } else {
-                // Filtra pelo gênero se não for misto
-                let filtrados = selecionados;
-                if (modo === "masc") filtrados = selecionados.filter(a => a.s === 'M');
-                if (modo === "fem") filtrados = selecionados.filter(a => a.s === 'F');
-
-                if (filtrados.length < 2) return alert("Atletas insuficientes para este modo!");
-
-                for (let i = 0; i < filtrados.length; i += 2) {
-                    if (filtrados[i + 1]) {
-                        resDiv.innerHTML += `<div class="dupla">✅ ${filtrados[i].n} + ${filtrados[i + 1].n}</div>`;
-                    } else {
-                        resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${filtrados[i].n} espera.</div>`;
-                    }
+                for (let i = 0; i < selecionados.length; i += 2) {
+                    if (selecionados[i + 1]) resDiv.innerHTML += `<div class="dupla">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
+                    else resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${selecionados[i].n} espera.</div>`;
                 }
             }
             window.scrollTo({ top: resDiv.offsetTop, behavior: 'smooth' });
