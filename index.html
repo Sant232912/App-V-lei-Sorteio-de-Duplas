@@ -196,7 +196,7 @@
     </div>
 
     <script>
-        let atletas = [
+        const listaPadrao = [
             { n: "Celin Vôlei", s: "M" }, { n: "Geminiana", s: "F" }, { n: "Lorraine", s: "F" },
             { n: "Emerson", s: "M" }, { n: "Lúcio", s: "M" }, { n: "Wendel", s: "M" },
             { n: "Ricardo", s: "M" }, { n: "Patrícia", s: "F" }, { n: "Bruno", s: "M" },
@@ -209,15 +209,21 @@
             { n: "Vitor", s: "M" }, { n: "Wagner", s: "M" }, { n: "Xande", s: "M" }
         ];
 
+        let atletas = JSON.parse(localStorage.getItem('listaAtletas')) || listaPadrao;
+
+        function salvar() {
+            localStorage.setItem('listaAtletas', JSON.stringify(atletas));
+        }
+
         function render() {
             const container = document.getElementById('lista');
             const modo = document.getElementById('modo').value;
             container.innerHTML = "";
 
             atletas.forEach((atleta, i) => {
-                const mostrarMasc = modo === "masc" && atleta.s === "M";
-                const mostrarFem = modo === "fem" && atleta.s === "F";
-                const mostrarMisto = modo === "misto";
+                const mostrarMasc = (modo === "masc" && atleta.s === "M");
+                const mostrarFem = (modo === "fem" && atleta.s === "F");
+                const mostrarMisto = (modo === "misto");
 
                 if (mostrarMasc || mostrarFem || mostrarMisto) {
                     container.innerHTML += `
@@ -240,16 +246,25 @@
             if (!campo.value) return alert("Digite o nome!");
             atletas.unshift({ n: campo.value, s: sexo });
             campo.value = "";
+            salvar();
             render();
         }
 
         function editarNome(i) {
             const novo = prompt("Editar nome:", atletas[i].n);
-            if (novo) { atletas[i].n = novo; render(); }
+            if (novo) {
+                atletas[i].n = novo;
+                salvar();
+                render();
+            }
         }
 
         function excluirAtleta(i) {
-            if (confirm(`Remover ${atletas[i].n}?`)) { atletas.splice(i, 1); render(); }
+            if (confirm(`Remover ${atletas[i].n}?`)) {
+                atletas.splice(i, 1);
+                salvar();
+                render();
+            }
         }
 
         function sortear() {
