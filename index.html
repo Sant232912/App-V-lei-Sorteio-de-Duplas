@@ -37,7 +37,6 @@
             margin-bottom: 10px;
         }
 
-        /* Sistema de Abas */
         .tabs {
             display: flex;
             gap: 10px;
@@ -118,11 +117,6 @@
             flex: 1;
         }
 
-        .acoes-player {
-            display: flex;
-            gap: 5px;
-        }
-
         .icon-btn {
             background: none;
             border: none;
@@ -164,6 +158,7 @@
             text-align: center;
             border-bottom: 1px solid #222;
             font-weight: 500;
+            font-size: 0.95rem;
         }
 
         .grupo-titulo {
@@ -172,6 +167,7 @@
             margin-top: 15px;
             border-bottom: 1px solid var(--primary);
             padding-bottom: 5px;
+            font-weight: bold;
         }
 
         .aviso {
@@ -219,7 +215,7 @@
 
         <label style="font-size: 0.8rem; color: #888; margin-left: 5px;">Tipo de Jogo / Filtro:</label>
         <select id="modo" onchange="render()">
-            <option value="misto">Misto (Todos)</option>
+            <option value="misto">Misto (H+M)</option>
             <option value="masc">Masculino</option>
             <option value="fem">Feminino</option>
         </select>
@@ -228,9 +224,7 @@
 
         <div id="resultado" class="resultado-box" style="display:none"></div>
 
-        <div id="btn-container">
-            <button class="btn-acao" id="btnPrincipal" onclick="sortearDayUse()">GERAR PRÓXIMA RODADA 🎲</button>
-        </div>
+        <button class="btn-acao" id="btnPrincipal" onclick="sortearDayUse()">GERAR PRÓXIMA RODADA 🎲</button>
         <button class="btn-acao btn-limpar" onclick="reiniciar()">REINICIAR TUDO 🔄</button>
     </div>
 
@@ -255,16 +249,12 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText.toLowerCase().includes(tab));
+            });
             const btn = document.getElementById('btnPrincipal');
-            if (tab === 'dayuse') {
-                btn.innerText = "GERAR PRÓXIMA RODADA 🎲";
-                btn.onclick = sortearDayUse;
-            } else {
-                btn.innerText = "CRIAR FASE DE GRUPOS 🏆";
-                btn.onclick = gerarTorneio;
-            }
+            btn.innerText = tab === 'dayuse' ? "GERAR PRÓXIMA RODADA 🎲" : "SORTEAR DUPLAS E GRUPOS 🏆";
+            btn.onclick = tab === 'dayuse' ? sortearDayUse : gerarTorneioCompleto;
             document.getElementById('resultado').style.display = 'none';
         }
 
@@ -306,53 +296,68 @@
             if (confirm(`Remover ${atletas[i].n}?`)) { atletas.splice(i, 1); salvar(); render(); }
         }
 
+        function getSelecionados() {
+            const checks = document.querySelectorAll('.atleta-check:checked');
+            return Array.from(checks).map(c => atletas[c.getAttribute('data-index')]);
+        }
+
+        function formarDuplas(lista) {
+            lista.sort(() => Math.random() - 0.5);
+            let duplas = [];
+            let sobra = [];
+            const modo = document.getElementById('modo').value;
+
+            if (modo === "misto") {
+                let h = lista.filter(a => a.s === 'M');
+                let m = lista.filter(a => a.s === 'F');
+                while (h.length > 0 && m.length > 0) {
+                    duplas.push(`🤝 ${h.pop().n} + ${m.pop().n}`);
+                }
+                sobra = [...h, ...m];
+            } else {
+                for (let i = 0; i < lista.length; i += 2) {
+                    if (lista[i + 1]) duplas.push(`🤝 ${lista[i].n} + ${lista[i + 1].n}`);
+                    else sobra.push(lista[i]);
+                }
+            }
+            return { duplas, sobra };
+        }
+
         function sortearDayUse() {
             const selecionados = getSelecionados();
             if (selecionados.length < 2) return alert("Selecione os atletas!");
+            const res = formarDuplas(selecionados);
             const resDiv = document.getElementById('resultado');
             resDiv.style.display = "block";
             resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>DUPLAS DAY USE</h3>";
 
-            selecionados.sort(() => Math.random() - 0.5);
-            const modo = document.getElementById('modo').value;
-
-            if (modo === "misto") {
-                let h = selecionados.filter(a => a.s === 'M');
-                let m = selecionados.filter(a => a.s === 'F');
-                while (h.length > 0 && m.length > 0) resDiv.innerHTML += `<div class="item-resultado">✅ ${h.pop().n} + ${m.pop().n}</div>`;
-                let sobra = [...h, ...m];
-                if (sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Aguardando: ${sobra.map(s => s.n).join(', ')}</div>`;
-            } else {
-                for (let i = 0; i < selecionados.length; i += 2) {
-                    if (selecionados[i + 1]) resDiv.innerHTML += `<div class="item-resultado">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
-                    else resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${selecionados[i].n} espera.</div>`;
-                }
-            }
+            res.duplas.forEach(d => resDiv.innerHTML += `<div class="item-resultado">${d}</div>`);
+            if (res.sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Aguardando: ${res.sobra.map(s => s.n).join(', ')}</div>`;
         }
 
-        function gerarTorneio() {
+        function gerarTorneioCompleto() {
             const selecionados = getSelecionados();
-            if (selecionados.length < 4) return alert("Mínimo de 4 atletas para torneio!");
+            if (selecionados.length < 4) return alert("Mínimo de 4 atletas (2 duplas)!");
+
+            const res = formarDuplas(selecionados);
+            if (res.duplas.length < 2) return alert("Não há duplas suficientes!");
+
             const resDiv = document.getElementById('resultado');
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>GRUPOS DO TORNEIO</h3>";
+            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>SORTEIO DO TORNEIO</h3>";
 
-            selecionados.sort(() => Math.random() - 0.5);
-            const numGrupos = Math.ceil(selecionados.length / 4);
+            const duplasSorteadas = res.duplas.sort(() => Math.random() - 0.5);
+            const numGrupos = Math.ceil(duplasSorteadas.length / 2); // 2 duplas por grupo
 
             for (let i = 0; i < numGrupos; i++) {
-                const grupo = selecionados.slice(i * 4, (i + 1) * 4);
+                const grupo = duplasSorteadas.slice(i * 2, (i + 1) * 2);
                 resDiv.innerHTML += `<div class="grupo-titulo">GRUPO ${String.fromCharCode(65 + i)}</div>`;
-                grupo.forEach(atleta => {
-                    resDiv.innerHTML += `<div class="item-resultado">${atleta.n}</div>`;
-                });
+                grupo.forEach(d => resDiv.innerHTML += `<div class="item-resultado">${d}</div>`);
             }
-            resDiv.innerHTML += `<div class="aviso">Boa sorte a todos os competidores! 🏆</div>`;
-        }
 
-        function getSelecionados() {
-            const checks = document.querySelectorAll('.atleta-check:checked');
-            return Array.from(checks).map(c => atletas[c.getAttribute('data-index')]);
+            if (res.sobra.length > 0) {
+                resDiv.innerHTML += `<div class="aviso" style="margin-top:10px; border-top:1px dashed #444">⚠️ Jogadores sem dupla: ${res.sobra.map(s => s.n).join(', ')}</div>`;
+            }
         }
 
         function reiniciar() {
