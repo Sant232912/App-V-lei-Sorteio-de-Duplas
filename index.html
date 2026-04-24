@@ -92,6 +92,30 @@
             cursor: pointer;
         }
 
+        .lista-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        .btn-select-all {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-select-all:active {
+            background: var(--primary);
+            color: black;
+        }
+
         .lista-jogadores {
             height: 250px;
             overflow-y: auto;
@@ -220,6 +244,11 @@
             <option value="fem">Feminino</option>
         </select>
 
+        <div class="lista-header">
+            <span style="font-size: 0.85rem; color: #888;">Lista de Atletas:</span>
+            <button class="btn-select-all" onclick="selecionarTodos()">SELECIONAR TODOS</button>
+        </div>
+
         <div class="lista-jogadores" id="lista"></div>
 
         <div id="resultado" class="resultado-box" style="display:none"></div>
@@ -243,12 +272,16 @@
         ];
 
         let atletas = JSON.parse(localStorage.getItem('listaAtletas')) || listaPadrao;
-        let currentTab = 'dayuse';
 
         function salvar() { localStorage.setItem('listaAtletas', JSON.stringify(atletas)); }
 
+        function selecionarTodos() {
+            const checks = document.querySelectorAll('.atleta-check');
+            const todosMarcados = Array.from(checks).every(c => c.checked);
+            checks.forEach(c => c.checked = !todosMarcados);
+        }
+
         function switchTab(tab) {
-            currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(b => {
                 b.classList.toggle('active', b.innerText.toLowerCase().includes(tab));
             });
@@ -302,22 +335,23 @@
         }
 
         function formarDuplas(lista) {
-            lista.sort(() => Math.random() - 0.5);
+            let tempLista = [...lista];
+            tempLista.sort(() => Math.random() - 0.5);
             let duplas = [];
             let sobra = [];
             const modo = document.getElementById('modo').value;
 
             if (modo === "misto") {
-                let h = lista.filter(a => a.s === 'M');
-                let m = lista.filter(a => a.s === 'F');
+                let h = tempLista.filter(a => a.s === 'M');
+                let m = tempLista.filter(a => a.s === 'F');
                 while (h.length > 0 && m.length > 0) {
                     duplas.push(`🤝 ${h.pop().n} + ${m.pop().n}`);
                 }
                 sobra = [...h, ...m];
             } else {
-                for (let i = 0; i < lista.length; i += 2) {
-                    if (lista[i + 1]) duplas.push(`🤝 ${lista[i].n} + ${lista[i + 1].n}`);
-                    else sobra.push(lista[i]);
+                for (let i = 0; i < tempLista.length; i += 2) {
+                    if (tempLista[i + 1]) duplas.push(`🤝 ${tempLista[i].n} + ${tempLista[i + 1].n}`);
+                    else sobra.push(tempLista[i]);
                 }
             }
             return { duplas, sobra };
@@ -330,38 +364,30 @@
             const resDiv = document.getElementById('resultado');
             resDiv.style.display = "block";
             resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>DUPLAS DAY USE</h3>";
-
             res.duplas.forEach(d => resDiv.innerHTML += `<div class="item-resultado">${d}</div>`);
             if (res.sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Aguardando: ${res.sobra.map(s => s.n).join(', ')}</div>`;
         }
 
         function gerarTorneioCompleto() {
             const selecionados = getSelecionados();
-            if (selecionados.length < 4) return alert("Mínimo de 4 atletas (2 duplas)!");
-
+            if (selecionados.length < 4) return alert("Mínimo de 4 atletas!");
             const res = formarDuplas(selecionados);
             if (res.duplas.length < 2) return alert("Não há duplas suficientes!");
-
             const resDiv = document.getElementById('resultado');
             resDiv.style.display = "block";
             resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>SORTEIO DO TORNEIO</h3>";
-
             const duplasSorteadas = res.duplas.sort(() => Math.random() - 0.5);
-            const numGrupos = Math.ceil(duplasSorteadas.length / 2); // 2 duplas por grupo
-
+            const numGrupos = Math.ceil(duplasSorteadas.length / 2);
             for (let i = 0; i < numGrupos; i++) {
                 const grupo = duplasSorteadas.slice(i * 2, (i + 1) * 2);
                 resDiv.innerHTML += `<div class="grupo-titulo">GRUPO ${String.fromCharCode(65 + i)}</div>`;
                 grupo.forEach(d => resDiv.innerHTML += `<div class="item-resultado">${d}</div>`);
             }
-
-            if (res.sobra.length > 0) {
-                resDiv.innerHTML += `<div class="aviso" style="margin-top:10px; border-top:1px dashed #444">⚠️ Jogadores sem dupla: ${res.sobra.map(s => s.n).join(', ')}</div>`;
-            }
+            if (res.sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Sem dupla: ${res.sobra.map(s => s.n).join(', ')}</div>`;
         }
 
         function reiniciar() {
-            if (confirm("Isso apagará todas as presenças. Continuar?")) {
+            if (confirm("Reiniciar presenças?")) {
                 document.querySelectorAll('.atleta-check').forEach(c => c.checked = false);
                 document.getElementById('resultado').style.display = "none";
             }
