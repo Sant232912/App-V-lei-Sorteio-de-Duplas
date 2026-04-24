@@ -34,6 +34,31 @@
             color: var(--primary);
             font-size: 1.4rem;
             margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        /* Sistema de Abas */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #444;
+            background: #222;
+            color: #888;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: black;
+            border-color: var(--primary);
         }
 
         .input-group {
@@ -68,13 +93,8 @@
             cursor: pointer;
         }
 
-        .btn-gen:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
         .lista-jogadores {
-            height: 300px;
+            height: 250px;
             overflow-y: auto;
             background: var(--card);
             border-radius: 15px;
@@ -139,11 +159,19 @@
             border: 1px solid var(--primary);
         }
 
-        .dupla {
+        .item-resultado {
             padding: 10px;
             text-align: center;
             border-bottom: 1px solid #222;
             font-weight: 500;
+        }
+
+        .grupo-titulo {
+            color: var(--primary);
+            text-align: center;
+            margin-top: 15px;
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 5px;
         }
 
         .aviso {
@@ -162,7 +190,6 @@
             color: white;
             border: 1px solid #444;
             margin-bottom: 15px;
-            font-size: 1rem;
         }
 
         input[type="checkbox"] {
@@ -176,6 +203,12 @@
 <body>
     <div class="main-container">
         <h1>🏐 JOELHO BICHADO PRO</h1>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dayuse')">DAY USE</button>
+            <button class="tab-btn" onclick="switchTab('torneio')">TORNEIO</button>
+        </div>
+
         <div class="input-group">
             <input type="text" id="novoNome" placeholder="Nome do novo atleta...">
             <div class="genero-escolha">
@@ -183,16 +216,22 @@
                 <button class="btn-gen" onclick="adicionarComGenero('F')">FEM (M)</button>
             </div>
         </div>
-        <label style="font-size: 0.8rem; color: #888; margin-left: 5px;">Tipo de Jogo:</label>
+
+        <label style="font-size: 0.8rem; color: #888; margin-left: 5px;">Tipo de Jogo / Filtro:</label>
         <select id="modo" onchange="render()">
-            <option value="misto">Jogo Misto (H+M)</option>
-            <option value="masc">Jogo Masculino</option>
-            <option value="fem">Jogo Feminino</option>
+            <option value="misto">Misto (Todos)</option>
+            <option value="masc">Masculino</option>
+            <option value="fem">Feminino</option>
         </select>
+
         <div class="lista-jogadores" id="lista"></div>
+
         <div id="resultado" class="resultado-box" style="display:none"></div>
-        <button class="btn-acao" onclick="sortear()">GERAR PRÓXIMA RODADA 🎲</button>
-        <button class="btn-acao btn-limpar" onclick="reiniciar()">REINICIAR DAY USE 🔄</button>
+
+        <div id="btn-container">
+            <button class="btn-acao" id="btnPrincipal" onclick="sortearDayUse()">GERAR PRÓXIMA RODADA 🎲</button>
+        </div>
+        <button class="btn-acao btn-limpar" onclick="reiniciar()">REINICIAR TUDO 🔄</button>
     </div>
 
     <script>
@@ -210,22 +249,32 @@
         ];
 
         let atletas = JSON.parse(localStorage.getItem('listaAtletas')) || listaPadrao;
+        let currentTab = 'dayuse';
 
-        function salvar() {
-            localStorage.setItem('listaAtletas', JSON.stringify(atletas));
+        function salvar() { localStorage.setItem('listaAtletas', JSON.stringify(atletas)); }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            const btn = document.getElementById('btnPrincipal');
+            if (tab === 'dayuse') {
+                btn.innerText = "GERAR PRÓXIMA RODADA 🎲";
+                btn.onclick = sortearDayUse;
+            } else {
+                btn.innerText = "CRIAR FASE DE GRUPOS 🏆";
+                btn.onclick = gerarTorneio;
+            }
+            document.getElementById('resultado').style.display = 'none';
         }
 
         function render() {
             const container = document.getElementById('lista');
             const modo = document.getElementById('modo').value;
             container.innerHTML = "";
-
             atletas.forEach((atleta, i) => {
-                const mostrarMasc = (modo === "masc" && atleta.s === "M");
-                const mostrarFem = (modo === "fem" && atleta.s === "F");
-                const mostrarMisto = (modo === "misto");
-
-                if (mostrarMasc || mostrarFem || mostrarMisto) {
+                const mostrar = (modo === "misto") || (modo === "masc" && atleta.s === "M") || (modo === "fem" && atleta.s === "F");
+                if (mostrar) {
                     container.innerHTML += `
                         <div class="card-jogador">
                             <div class="info-player">
@@ -245,59 +294,69 @@
             const campo = document.getElementById('novoNome');
             if (!campo.value) return alert("Digite o nome!");
             atletas.unshift({ n: campo.value, s: sexo });
-            campo.value = "";
-            salvar();
-            render();
+            campo.value = ""; salvar(); render();
         }
 
         function editarNome(i) {
             const novo = prompt("Editar nome:", atletas[i].n);
-            if (novo) {
-                atletas[i].n = novo;
-                salvar();
-                render();
-            }
+            if (novo) { atletas[i].n = novo; salvar(); render(); }
         }
 
         function excluirAtleta(i) {
-            if (confirm(`Remover ${atletas[i].n}?`)) {
-                atletas.splice(i, 1);
-                salvar();
-                render();
-            }
+            if (confirm(`Remover ${atletas[i].n}?`)) { atletas.splice(i, 1); salvar(); render(); }
         }
 
-        function sortear() {
-            const checks = document.querySelectorAll('.atleta-check:checked');
-            const selecionados = Array.from(checks).map(c => atletas[c.getAttribute('data-index')]);
-            const resDiv = document.getElementById('resultado');
-            const modo = document.getElementById('modo').value;
-
+        function sortearDayUse() {
+            const selecionados = getSelecionados();
             if (selecionados.length < 2) return alert("Selecione os atletas!");
-
+            const resDiv = document.getElementById('resultado');
             resDiv.style.display = "block";
-            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>RODADA GERADA</h3>";
+            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>DUPLAS DAY USE</h3>";
+
             selecionados.sort(() => Math.random() - 0.5);
+            const modo = document.getElementById('modo').value;
 
             if (modo === "misto") {
                 let h = selecionados.filter(a => a.s === 'M');
                 let m = selecionados.filter(a => a.s === 'F');
-                while (h.length > 0 && m.length > 0) {
-                    resDiv.innerHTML += `<div class="dupla">✅ ${h.pop().n} + ${m.pop().n}</div>`;
-                }
+                while (h.length > 0 && m.length > 0) resDiv.innerHTML += `<div class="item-resultado">✅ ${h.pop().n} + ${m.pop().n}</div>`;
                 let sobra = [...h, ...m];
-                if (sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Sobrou: ${sobra.map(s => s.n).join(', ')}</div>`;
+                if (sobra.length > 0) resDiv.innerHTML += `<div class="aviso">⚠️ Aguardando: ${sobra.map(s => s.n).join(', ')}</div>`;
             } else {
                 for (let i = 0; i < selecionados.length; i += 2) {
-                    if (selecionados[i + 1]) resDiv.innerHTML += `<div class="dupla">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
+                    if (selecionados[i + 1]) resDiv.innerHTML += `<div class="item-resultado">✅ ${selecionados[i].n} + ${selecionados[i + 1].n}</div>`;
                     else resDiv.innerHTML += `<div class="aviso">⚠️ Ímpar: ${selecionados[i].n} espera.</div>`;
                 }
             }
-            window.scrollTo({ top: resDiv.offsetTop, behavior: 'smooth' });
+        }
+
+        function gerarTorneio() {
+            const selecionados = getSelecionados();
+            if (selecionados.length < 4) return alert("Mínimo de 4 atletas para torneio!");
+            const resDiv = document.getElementById('resultado');
+            resDiv.style.display = "block";
+            resDiv.innerHTML = "<h3 style='text-align:center; margin:0; color:var(--primary)'>GRUPOS DO TORNEIO</h3>";
+
+            selecionados.sort(() => Math.random() - 0.5);
+            const numGrupos = Math.ceil(selecionados.length / 4);
+
+            for (let i = 0; i < numGrupos; i++) {
+                const grupo = selecionados.slice(i * 4, (i + 1) * 4);
+                resDiv.innerHTML += `<div class="grupo-titulo">GRUPO ${String.fromCharCode(65 + i)}</div>`;
+                grupo.forEach(atleta => {
+                    resDiv.innerHTML += `<div class="item-resultado">${atleta.n}</div>`;
+                });
+            }
+            resDiv.innerHTML += `<div class="aviso">Boa sorte a todos os competidores! 🏆</div>`;
+        }
+
+        function getSelecionados() {
+            const checks = document.querySelectorAll('.atleta-check:checked');
+            return Array.from(checks).map(c => atletas[c.getAttribute('data-index')]);
         }
 
         function reiniciar() {
-            if (confirm("Limpar presenças?")) {
+            if (confirm("Isso apagará todas as presenças. Continuar?")) {
                 document.querySelectorAll('.atleta-check').forEach(c => c.checked = false);
                 document.getElementById('resultado').style.display = "none";
             }
